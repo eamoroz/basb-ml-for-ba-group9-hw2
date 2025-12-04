@@ -39,8 +39,8 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    csv_path = mo.notebook_location() / "public" / "insurance_dataset.csv"
-    df = pd.read_csv(csv_path)
+    csv_path = mo.notebook_dir() / "insurance_dataset.csv"
+    df = pd.read_csv(str(csv_path))
     df.tail()
     return (df,)
 
