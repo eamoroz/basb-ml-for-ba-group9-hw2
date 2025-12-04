@@ -121,6 +121,15 @@ def _(mo):
 def _(KMeans, StandardScaler, df, pd, plt):
     cols = ['coverage_level', 'charges']
     df_clust = df.drop(columns=cols)
+    df_removed = df[cols].copy()
+    X_encoded = pd.get_dummies(df_clust, drop_first=True)
+    final_df = pd.concat([X_encoded, df_removed], axis=1)
+
+
+
+
+    cols = ['coverage_level', 'charges']
+    df_clust = df.drop(columns=cols)
     X_encoded = pd.get_dummies(df_clust, drop_first=True)
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_encoded)
@@ -342,12 +351,6 @@ def _(slider_smoker):
 
 
 @app.cell
-def _(slider_sportsman):
-    slider_sportsman.value
-    return
-
-
-@app.cell
 def _(
     X_encoded,
     slider_children,
@@ -388,21 +391,18 @@ def _(mo):
 @app.cell
 def _(KMeans, PCA, StandardScaler, plt):
     def cluster_segment(df_filtered, k=3, use_pca_for_model=False):
-        # ---- Scaling ----
+
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(df_filtered)
 
-        # ---- Select data for KMeans ----
         pca_model = PCA(n_components=10, random_state=42)
         X_pca_10 = pca_model.fit_transform(X_scaled)
 
         X_for_kmeans = X_pca_10 if use_pca_for_model else X_scaled
 
-        # ---- KMeans ----
         kmeans = KMeans(n_clusters=k, random_state=42)
         labels = kmeans.fit_predict(X_for_kmeans)
 
-        # ---- PCA for visualization (2D) ----
         pca_vis = PCA(n_components=2, random_state=42)
         X_pca_2 = pca_vis.fit_transform(X_scaled)
 
@@ -411,7 +411,6 @@ def _(KMeans, PCA, StandardScaler, plt):
         df_viz["pca_1"] = X_pca_2[:, 0]
         df_viz["pca_2"] = X_pca_2[:, 1]
 
-        # ---- Scatter plot (ONLY output for marimo) ----
         fig = plt.figure(figsize=(10, 7))
         scatter = plt.scatter(
             df_viz["pca_1"],
@@ -437,6 +436,43 @@ def _(slider_clusters):
 @app.cell
 def _(X_encoded, cluster_segment, slider_clusters):
     cluster_segment(X_encoded,k = slider_clusters.value)
+    return
+
+
+@app.cell
+def _(KMeans, PCA, StandardScaler):
+    def cluster_segment_data(df_filtered, k=3, use_pca_for_model=False):
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(df_filtered)
+
+        pca_model = PCA(n_components=10, random_state=42)
+        X_pca_10 = pca_model.fit_transform(X_scaled)
+
+        X_for_kmeans = X_pca_10 if use_pca_for_model else X_scaled
+
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        labels = kmeans.fit_predict(X_for_kmeans)
+
+        pca_vis = PCA(n_components=2, random_state=42)
+        X_pca_2 = pca_vis.fit_transform(X_scaled)
+
+        df_viz = df_filtered.copy()
+        df_viz["cluster"] = labels
+        df_viz["pca_1"] = X_pca_2[:, 0]
+        df_viz["pca_2"] = X_pca_2[:, 1]
+
+
+        return df_viz
+    return (cluster_segment_data,)
+
+
+@app.cell
+def _(X_encoded, cluster_segment_data, mo, slider_clusters):
+    df_viz = cluster_segment_data(X_encoded,k = slider_clusters.value)
+
+    cluster_profile = df_viz.groupby("cluster").mean()
+
+    mo.ui.table(cluster_profile.round(3))
     return
 
 
